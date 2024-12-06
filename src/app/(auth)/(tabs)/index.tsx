@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/context/auth';
 import DatePicker from '@/src/components/DatePicker';
+import { Link } from 'expo-router';
 
 export default function ScheduleScreen() {
   const screenWidth = Dimensions.get('window').width;
@@ -52,7 +53,9 @@ export default function ScheduleScreen() {
                   <Text style={styles.buttonText}>CONFIRM</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.rescheduleButton}>
-                  <Text style={styles.buttonText}>RESCHEDULE</Text>
+                  <Link href="/(auth)/reschedule">
+                    <Text style={styles.buttonText}>Reschedule</Text>
+                  </Link>
                 </TouchableOpacity>
               </View>
             </View>

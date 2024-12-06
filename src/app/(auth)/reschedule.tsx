@@ -17,18 +17,18 @@ const { width } = Dimensions.get('window');
 export default function RescheduleScreen() {
   const navigation = useNavigation();
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>('Thursday, 30th of January 2022');
+  const [selectedDate, setSelectedDate] = useState<string>(
+    'Thursday, 30th of January 2022'
+  );
 
-  const timeSlots = [
-    '11.00', '12.00', '13.00', '14.00', '15.00', '16.00'
-  ];
+  const timeSlots = ['11.00', '12.00', '13.00', '14.00', '15.00', '16.00'];
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
@@ -52,7 +52,9 @@ export default function RescheduleScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Scheduled</Text>
           <View style={styles.sectionContent}>
-            <Text style={styles.sectionText}>Thursday, 29th of January 2022</Text>
+            <Text style={styles.sectionText}>
+              Thursday, 29th of January 2022
+            </Text>
           </View>
         </View>
 
@@ -73,14 +75,16 @@ export default function RescheduleScreen() {
                 key={time}
                 style={[
                   styles.timeSlot,
-                  selectedTime === time && styles.selectedTimeSlot
+                  selectedTime === time && styles.selectedTimeSlot,
                 ]}
                 onPress={() => setSelectedTime(time)}
               >
-                <Text style={[
-                  styles.timeSlotText,
-                  selectedTime === time && styles.selectedTimeSlotText
-                ]}>
+                <Text
+                  style={[
+                    styles.timeSlotText,
+                    selectedTime === time && styles.selectedTimeSlotText,
+                  ]}
+                >
                   {time}
                 </Text>
               </TouchableOpacity>
