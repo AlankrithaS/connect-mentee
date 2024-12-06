@@ -162,7 +162,7 @@ export default function RegisterScreen() {
         Already have an account?{' '}
         <Text
           style={styles.loginText}
-          onPress={() => router.navigate('/(public)/login')}
+          onPress={() => router.navigate('/(public)/AddSchedule')}
         >
           Log In
         </Text>
