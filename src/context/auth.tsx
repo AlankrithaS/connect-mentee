@@ -76,7 +76,7 @@ function useProtectedRoute(user: any, isInitialized: boolean) {
       !inAuthGroup
     ) {
       // Redirect to the sign-in page
-      router.replace('/(public)/login');
+      router.replace('/(public)/role_selection');
     } else if (user && inAuthGroup) {
       // Redirect away from the sign-in page
       router.replace('/(tabs)/');

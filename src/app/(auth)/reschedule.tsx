@@ -8,20 +8,76 @@ import {
   Dimensions,
   StatusBar,
   Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import PocketBase from 'pocketbase';
+import { useAuth } from '@/src/context/auth'; // Ensure this path is correct
 
 const { width } = Dimensions.get('window');
 
 export default function RescheduleScreen() {
-  const navigation = useNavigation();
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    'Thursday, 30th of January 2022'
-  );
+  const router = useRouter();
+  const { allocationId, classDetails, scheduledDate, scheduledTime } =
+    useLocalSearchParams();
+  const { user } = useAuth(); // Get the logged-in user's details
+  console.log(classDetails);
 
-  const timeSlots = ['11.00', '12.00', '13.00', '14.00', '15.00', '16.00'];
+  const [selectedDate, setSelectedDate] = useState<string>(
+    scheduledDate as string
+  );
+  const [selectedTime, setSelectedTime] = useState<string>(
+    scheduledTime as string
+  );
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const pb = new PocketBase('http://localhost:8090'); // Replace with your PocketBase URL
+
+  // Time slots starting from 2 PM in 1-hour intervals
+  const timeSlots = ['14:00', '15:00', '16:00', '17:00', '18:00'];
+
+  const handleDateChange = (event: any, date?: Date) => {
+    setShowDatePicker(false);
+    if (date) {
+      const formattedDate = date.toISOString().split('T')[0]; // ISO format (YYYY-MM-DD)
+      setSelectedDate(formattedDate);
+    }
+  };
+
+  const handleAddSchedule = async () => {
+    if (!selectedDate || !selectedTime) {
+      Alert.alert('Error', 'Please select a valid date and time.');
+      return;
+    }
+
+    const updatedDateTime = `${selectedDate}T${selectedTime}:00.000Z`; // Combine date and time in ISO format
+
+    try {
+      // Validate the user is logged in
+      if (!user || !user.id) {
+        throw new Error('You must be logged in to reschedule.');
+      }
+
+      // Update the session date and time in PocketBase
+      await pb.collection('allocations').update(allocationId as string, {
+        session_date: updatedDateTime,
+      });
+
+      Alert.alert(
+        'Success',
+        `Session rescheduled to ${selectedDate} at ${selectedTime}`
+      );
+      router.back(); // Navigate back to the previous screen
+    } catch (error: any) {
+      console.error('Error updating allocation:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to update the session schedule.'
+      );
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -29,7 +85,7 @@ export default function RescheduleScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
-            onPress={() => navigation.goBack()}
+            onPress={() => router.back()} // Navigate back
             style={styles.backButton}
           >
             <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
@@ -44,7 +100,7 @@ export default function RescheduleScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Class</Text>
           <View style={styles.sectionContent}>
-            <Text style={styles.sectionText}>Meeting with Mcom (room-208)</Text>
+            <Text style={styles.sectionText}>{classDetails}</Text>
           </View>
         </View>
 
@@ -53,7 +109,7 @@ export default function RescheduleScreen() {
           <Text style={styles.sectionLabel}>Scheduled</Text>
           <View style={styles.sectionContent}>
             <Text style={styles.sectionText}>
-              Thursday, 29th of January 2022
+              {scheduledDate} at {scheduledTime}
             </Text>
           </View>
         </View>
@@ -61,16 +117,27 @@ export default function RescheduleScreen() {
         {/* Rescheduled Date */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Re Scheduled</Text>
-          <View style={styles.sectionContent}>
+          <TouchableOpacity
+            style={styles.sectionContent}
+            onPress={() => setShowDatePicker(true)}
+          >
             <Text style={styles.sectionText}>{selectedDate}</Text>
-          </View>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={new Date(scheduledDate as string)} // Default to the current scheduled date
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+            />
+          )}
         </View>
 
         {/* Time Slots */}
         <View style={styles.timeSection}>
           <Text style={styles.sectionLabel}>Time</Text>
           <View style={styles.timeGrid}>
-            {timeSlots.map((time, index) => (
+            {timeSlots.map((time) => (
               <TouchableOpacity
                 key={time}
                 style={[
@@ -93,7 +160,7 @@ export default function RescheduleScreen() {
         </View>
 
         {/* Add Schedule Button */}
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddSchedule}>
           <Text style={styles.addButtonText}>Add Schedule</Text>
         </TouchableOpacity>
       </View>

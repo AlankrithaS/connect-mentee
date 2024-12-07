@@ -1,26 +1,20 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Link } from 'expo-router';
 
 export default function RoleSelectionScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Your Role</Text>
-
-      <TouchableOpacity
-        style={styles.buttonMentor}
-        onPress={() =>
-          router.push({
-            pathname: '/(public)/register',
-            params: { role: 'mentor' },
-          })
-        }
-      >
-        <Text style={styles.buttonText}>I am a Mentor</Text>
+      <TouchableOpacity style={styles.button}>
+        <Link href="/(public)/register?role=mentor" style={styles.linkText}>
+          I am a Mentor
+        </Link>
       </TouchableOpacity>
-
-      <TouchableOpacity style={styles.buttonMentee}>
-        <Text style={styles.buttonText}>I am a Mentee</Text>
+      <TouchableOpacity style={styles.button}>
+        <Link href="/(public)/register?role=mentee" style={styles.linkText}>
+          I am a Mentee
+        </Link>
       </TouchableOpacity>
     </View>
   );
@@ -29,42 +23,28 @@ export default function RoleSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#8F827C', // Background color
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#EBEDF1',
-    marginBottom: 40,
+    color: '#FFFFFF',
+    marginBottom: 30,
   },
-  buttonMentor: {
-    backgroundColor: '#563529', // Mentor button color
-    paddingVertical: 15,
-    paddingHorizontal: 40,
+  button: {
+    backgroundColor: '#585759',
+    padding: 15,
     borderRadius: 10,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    width: '80%',
+    alignItems: 'center',
   },
-  buttonMentee: {
-    backgroundColor: '#392C38', // Mentee button color
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  buttonText: {
-    color: '#EBEDF1', // Text color
-    fontSize: 18,
+  linkText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

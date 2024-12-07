@@ -57,7 +57,7 @@ export default function RegisterScreen() {
     // Add role and emailVisibility to formData before validating
     const formDataWithRoleAndVisibility: RegisterFormData = {
       ...formData,
-      role: 'mentor', // Hardcoded role, can be dynamic if needed
+      role: role || 'mentee', // Default to mentee if no role is passed
       emailVisibility: true,
     };
 
@@ -162,7 +162,7 @@ export default function RegisterScreen() {
         Already have an account?{' '}
         <Text
           style={styles.loginText}
-          onPress={() => router.navigate('/(public)/AddSchedule')}
+          onPress={() => router.navigate('/(public)/login')}
         >
           Log In
         </Text>
@@ -174,58 +174,58 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000', // Dark background
+    backgroundColor: '#000000',
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF', // White text color for title
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
-    color: '#FFFFFF', // White text color for subtitle
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 30,
   },
   input: {
     width: '100%',
-    backgroundColor: '#585759', // Dark gray background for input fields
+    backgroundColor: '#585759',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
-    color: '#FFFFFF', // White text color for inputs
+    color: '#FFFFFF',
     fontSize: 16,
   },
   errorText: {
-    color: '#FF4C4C', // Red color for error messages
+    color: '#FF4C4C',
     marginBottom: 10,
     fontSize: 12,
   },
   button: {
-    backgroundColor: '#9B9B9B', // Gray background color for the button
+    backgroundColor: '#9B9B9B',
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 20,
   },
   buttonText: {
-    color: '#FFFFFF', // White text color for the button
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
   footerText: {
     fontSize: 14,
-    color: '#FFFFFF', // White text color for footer
+    color: '#FFFFFF',
     textAlign: 'center',
     marginTop: 20,
   },
   loginText: {
     fontWeight: 'bold',
-    color: '#FFFFFF', // White color for "Log In" link
+    color: '#FFFFFF',
     textDecorationLine: 'underline',
   },
 });

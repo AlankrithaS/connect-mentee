@@ -1,24 +1,188 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   Dimensions,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/context/auth';
 import DatePicker from '@/src/components/DatePicker';
 import { Link } from 'expo-router';
+import PocketBase from 'pocketbase';
+import { useRouter } from 'expo-router';
+
+type Venue = {
+  id: string;
+  room_number: string;
+  block: string;
+  floor: number;
+};
+
+type Session = {
+  id: string;
+  session_week: number;
+  status: string;
+  time_slot: string;
+  venue_id?: string;
+  venue: Venue | null;
+  collectionId: string;
+  collectionName: string;
+  session_date: string;
+  updated: string;
+};
 
 export default function ScheduleScreen() {
-  const screenWidth = Dimensions.get('window').width;
-
-  // Assuming `useAuth` returns an object with a `user` property
   const { user } = useAuth();
+  const router = useRouter();
+  const pb = new PocketBase('http://localhost:8090');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  console.log(user);
+  const fetchSessions = async () => {
+    if (!user.id) return; // Prevent calls if user is not ready
+    try {
+      setRefreshing(true);
+      const allocationResult = await pb
+        .collection('allocations')
+        .getList(1, 50, {
+          filter: `mentor_id="${user.id}"`,
+        });
+
+      const sessionWithVenuePromises = allocationResult.items.map(
+        async (session) => {
+          let venue: Venue | null = null;
+          if (session.venue_id) {
+            try {
+              const venueResult = await pb
+                .collection('venues')
+                .getOne(session.venue_id);
+              venue = {
+                id: venueResult.id,
+                room_number: venueResult.room_number,
+                block: venueResult.block,
+                floor: venueResult.floor,
+              };
+            } catch (err) {
+              console.error(
+                `Error fetching venue for session: ${session.id}`,
+                err
+              );
+            }
+          }
+          return {
+            id: session.id,
+            session_week: session.session_week ?? 0,
+            status: session.status ?? 'unknown',
+            time_slot: session.time_slot ?? 'Not Specified',
+            venue_id: session.venue_id,
+            venue: venue,
+            collectionId: session.collectionId,
+            collectionName: session.collectionName,
+            session_date: session.session_date ?? '',
+            updated: session.updated,
+          } as Session;
+        }
+      );
+
+      const sessionsWithVenues = await Promise.all(sessionWithVenuePromises);
+      setSessions(sessionsWithVenues);
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+      Alert.alert('Error', 'Failed to fetch sessions');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Initial fetch on mount
+  useEffect(() => {
+    if (!isMounted) {
+      fetchSessions();
+      setIsMounted(true); // Set as mounted to prevent future unnecessary calls
+    }
+  }, [isMounted]);
+
+  const renderSessionItem = ({ item }: { item: Session }) => {
+    const sessionDate = new Date(item.session_date);
+    const formattedDate = sessionDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const formattedTime = sessionDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const venueDetails = item.venue
+      ? `Meeting with ${item.venue.room_number}, Block ${item.venue.block}, Floor ${item.venue.floor}`
+      : 'Meeting with Unknown Venue';
+
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          router.push(
+            `/menteeList?allocationId=${
+              item.id
+            }&classDetails=${encodeURIComponent(venueDetails)}`
+          )
+        }
+      >
+        <View style={styles.scheduleItem}>
+          <View style={styles.scheduleContent}>
+            <View style={styles.scheduleHeader}>
+              <Text style={styles.weekText}>Week {item.session_week}</Text>
+              <Text style={styles.sessionText}>
+                {item.status === 'upcoming'
+                  ? 'Upcoming session'
+                  : 'Past session'}
+              </Text>
+              <Text style={styles.timeInfoText}>
+                {formattedDate} at {formattedTime}
+              </Text>
+              <View style={styles.locationRow}>
+                <Ionicons name="location-outline" size={16} color="#FFFFFF" />
+                <Text style={styles.locationText}>
+                  {item.venue
+                    ? `${item.venue.room_number}, ${item.venue.block}, Floor ${item.venue.floor}`
+                    : 'Location not set'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.scheduleActions}>
+              <TouchableOpacity style={styles.confirmButton}>
+                <Text style={styles.buttonText}>CONFIRM</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.rescheduleButton}>
+                <Link
+                  href={`/(auth)/reschedule?allocationId=${
+                    item.id
+                  }&classDetails=${encodeURIComponent(
+                    venueDetails
+                  )}&scheduledDate=${
+                    sessionDate.toISOString().split('T')[0]
+                  }&scheduledTime=${sessionDate
+                    .toISOString()
+                    .split('T')[1]
+                    .slice(0, 5)}`}
+                  style={styles.linkText}
+                >
+                  Reschedule
+                </Link>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -34,34 +198,16 @@ export default function ScheduleScreen() {
       {/* Week Schedule */}
       <Text style={styles.weekScheduleTitle}>Week Schedule</Text>
 
-      <ScrollView contentContainerStyle={styles.scheduleList}>
-        {[...Array(4)].map((_, index) => (
-          <View key={index} style={styles.scheduleItem}>
-            <View style={styles.timeColumn}>
-              <Text style={styles.timeText}>11:35</Text>
-              <Text style={styles.timeText}>13:05</Text>
-            </View>
-            <View style={styles.scheduleContent}>
-              <View style={styles.scheduleHeader}>
-                <Text style={styles.weekText}>Week 1</Text>
-                <Text style={styles.sessionText}>Upcoming session</Text>
-                <Text style={styles.timeInfoText}>Tomorrow 10:25-11:25</Text>
-                <Text style={styles.locationText}>Room 205 - 1st floor</Text>
-              </View>
-              <View style={styles.scheduleActions}>
-                <TouchableOpacity style={styles.confirmButton}>
-                  <Text style={styles.buttonText}>CONFIRM</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.rescheduleButton}>
-                  <Link href="/(auth)/reschedule">
-                    <Text style={styles.buttonText}>Reschedule</Text>
-                  </Link>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+      {/* FlatList for sessions */}
+      <FlatList
+        data={sessions}
+        keyExtractor={(item) => item.id}
+        renderItem={renderSessionItem}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={fetchSessions} />
+        }
+        contentContainerStyle={styles.scheduleList}
+      />
     </View>
   );
 }
@@ -88,33 +234,28 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 10,
+    marginVertical: 10,
   },
   scheduleList: {
-    paddingBottom: 40, // Space for the end of the list
+    paddingBottom: 40,
   },
   scheduleItem: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    backgroundColor: '#585759',
-    borderRadius: 16,
-    padding: 10,
-  },
-  timeColumn: {
-    width: 60,
-    justifyContent: 'center',
-  },
-  timeText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    flexDirection: 'column',
     marginBottom: 10,
+    backgroundColor: '#2C2C2E',
+    borderRadius: 16,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   scheduleContent: {
     flex: 1,
-    paddingLeft: 10,
   },
   scheduleHeader: {
-    marginBottom: 10,
+    marginBottom: 15,
   },
   weekText: {
     fontSize: 18,
@@ -122,37 +263,52 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sessionText: {
-    fontSize: 16,
-    color: '#9B9B9B',
+    fontSize: 14,
+    color: '#A6A6A6',
     marginBottom: 5,
   },
   timeInfoText: {
     fontSize: 14,
-    color: '#9B9B9B',
+    color: '#A6A6A6',
+    marginBottom: 5,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
   },
   locationText: {
     fontSize: 14,
-    color: '#9B9B9B',
+    color: '#FFFFFF',
+    marginLeft: 5,
   },
   scheduleActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
+    gap: 10,
   },
   confirmButton: {
-    backgroundColor: '#4A4E69',
-    borderRadius: 10,
+    backgroundColor: '#4A4A4A',
+    borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
   },
   rescheduleButton: {
-    backgroundColor: '#2A2D34',
-    borderRadius: 10,
+    backgroundColor: '#6A6A6A',
+    borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  linkText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

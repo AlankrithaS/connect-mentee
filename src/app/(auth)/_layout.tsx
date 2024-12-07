@@ -8,6 +8,7 @@ export default function Layout() {
       }}
     >
       <Stack.Screen name="reschedule" options={{}} />
+      <Stack.Screen name="menteeList" options={{}} />
     </Stack>
   );
 }

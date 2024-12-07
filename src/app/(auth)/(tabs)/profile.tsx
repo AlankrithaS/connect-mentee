@@ -21,7 +21,7 @@ export default function ProfileScreen() {
   const handleSignOut = async () => {
     const result = await signOut();
     if (result.user === null) {
-      router.push('/(public)/login');
+      router.push('/(public)/role_selection');
     } else if (result.error) {
       console.log('Error signing out:', result.error);
     }
